@@ -1,0 +1,6 @@
+services:
+    App\Tests\Functional\Support\StubExchangeRateService:
+        autoconfigure: true
+
+    App\Domain\Loan\Service\ExchangeRate\ExchangeRateServiceInterface:
+        alias: App\Tests\Functional\Support\StubExchangeRateService

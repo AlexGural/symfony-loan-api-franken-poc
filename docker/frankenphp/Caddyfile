@@ -1,0 +1,22 @@
+{
+	frankenphp
+	order php_server before file_server
+
+	# Disable HTTPS in dev
+	auto_https off
+	http_port 80
+}
+
+:80 {
+	root * /app/public
+
+	php_server {
+		worker /app/public/index.php {
+			num {$FRANKEN_WORKERS:1}
+            max_requests {$FRANKEN_MAX_REQUEST_RESTART:1000}
+#			watch /app/src/**/*.php
+#			watch /app/config/**/*.{php,yaml}
+#			watch /app/templates/**/*.twig
+		}
+	}
+}

@@ -1,0 +1,14 @@
+nelmio_api_doc:
+    documentation:
+        info:
+            title: Symfony Loan API
+            description: User & Loan management API
+            version: 1.0.0
+        servers:
+            - url: http://localhost:8080
+              description: FPM
+            - url: http://localhost:8081
+              description: FrankenPHP
+    areas:
+        path_patterns:
+            - ^/api(?!/doc)

@@ -1,0 +1,54 @@
+<?xml version="1.0"?>
+<psalm
+    errorLevel="3"
+    resolveFromConfigFile="true"
+    findUnusedCode="true"
+    findUnusedPsalmSuppress="true"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:noNamespaceSchemaLocation="vendor/vimeo/psalm/config.xsd"
+>
+    <projectFiles>
+        <directory name="src"/>
+        <ignoreFiles>
+            <directory name="vendor"/>
+            <directory name="var"/>
+            <directory name="tests"/>
+            <directory name="src/Infrastructure/Persistence/Migrations"/>
+        </ignoreFiles>
+    </projectFiles>
+
+    <issueHandlers>
+        <PossiblyUnusedMethod>
+            <errorLevel type="suppress">
+                <directory name="src/Application"/>
+                <directory name="src/Domain"/>
+                <directory name="src/Infrastructure"/>
+                <directory name="src/Presentation"/>
+            </errorLevel>
+        </PossiblyUnusedMethod>
+
+        <UnusedClass>
+            <errorLevel type="suppress">
+                <directory name="src/Infrastructure"/>
+                <directory name="src/Presentation"/>
+                <directory name="src/Domain/Loan/Service/LoanStrategy"/>
+            </errorLevel>
+        </UnusedClass>
+
+        <PossiblyUnusedProperty>
+            <errorLevel type="suppress">
+                <directory name="src/Presentation/Response"/>
+                <directory name="src/Domain/Loan/ValueObject"/>
+            </errorLevel>
+        </PossiblyUnusedProperty>
+
+        <ParamNameMismatch>
+            <errorLevel type="suppress">
+                <file name="src/Infrastructure/Persistence/Doctrine/Trait/PersistenceTrait.php"/>
+            </errorLevel>
+        </ParamNameMismatch>
+    </issueHandlers>
+</psalm>
+
+
+
