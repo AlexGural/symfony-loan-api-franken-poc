@@ -24,6 +24,7 @@ final readonly class DomainExceptionListener
         DomainErrorCode::PAYMENT_CURRENCY_MISMATCH->value => Response::HTTP_UNPROCESSABLE_ENTITY,
         DomainErrorCode::EXCHANGE_RATE_UNAVAILABLE->value => Response::HTTP_SERVICE_UNAVAILABLE,
         DomainErrorCode::UNSUPPORTED_CURRENCY->value => Response::HTTP_UNPROCESSABLE_ENTITY,
+        DomainErrorCode::MIN_PAYMENT_AMOUNT->value => Response::HTTP_UNPROCESSABLE_ENTITY,
     ];
 
     public function __construct(

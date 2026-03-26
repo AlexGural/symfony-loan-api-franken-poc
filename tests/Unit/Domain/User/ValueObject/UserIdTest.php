@@ -20,14 +20,14 @@ final class UserIdTest extends TestCase
     {
         $this->expectException(\InvalidArgumentException::class);
 
-        new UserId('not-a-uuid');
+        (void) UserId::fromString('not-a-uuid');
     }
 
     public function testEquality(): void
     {
         $uuid = '01942a6c-0b4a-7d6e-8a12-abcdef123456';
-        $a = new UserId($uuid);
-        $b = new UserId($uuid);
+        $a = UserId::fromString($uuid);
+        $b = UserId::fromString($uuid);
 
         self::assertTrue($a->equals($b));
     }

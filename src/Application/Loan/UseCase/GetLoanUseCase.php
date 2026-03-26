@@ -19,6 +19,7 @@ final readonly class GetLoanUseCase
     #[\NoDiscard]
     public function execute(string $loanId): Loan
     {
-        return $this->loanRepository->findById(new LoanId($loanId)) ?? throw LoanNotFoundException::withId($loanId);
+        return $this->loanRepository->findById(LoanId::fromString($loanId))
+            ?? throw LoanNotFoundException::withId($loanId);
     }
 }

@@ -22,7 +22,7 @@ final readonly class ListLoanPaymentsUseCase
     #[\NoDiscard]
     public function execute(string $loanId): array
     {
-        $id = new LoanId($loanId);
+        $id = LoanId::fromString($loanId);
 
         $this->loanRepository->findById($id)
             ?? throw LoanNotFoundException::withId($loanId);

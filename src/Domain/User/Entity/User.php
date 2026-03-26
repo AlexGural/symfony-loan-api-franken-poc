@@ -35,7 +35,7 @@ class User
 
     public function getId(): UserId
     {
-        return new UserId($this->id);
+        return UserId::fromString($this->id);
     }
 
     public function getName(): string

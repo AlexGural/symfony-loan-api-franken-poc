@@ -101,7 +101,7 @@ class Loan
 
     public function getId(): LoanId
     {
-        return new LoanId($this->id);
+        return LoanId::fromString($this->id);
     }
 
     public function getUserId(): UserId

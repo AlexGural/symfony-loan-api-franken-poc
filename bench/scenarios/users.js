@@ -3,12 +3,14 @@ import { check } from 'k6';
 import { Counter, Trend } from 'k6/metrics';
 
 const BASE_URL = __ENV.BASE_URL || 'http://localhost:8080';
+
+const VIRTUAL_USERS = 10;
 const PAYMENTS_PER_LOAN = 20;
 
 const createUserDuration = new Trend('create_user_duration', true);
 const applyLoanDuration = new Trend('apply_loan_duration', true);
 const makePaymentDuration = new Trend('make_payment_duration', true);
-// const crossCurrencyPaymentDuration = new Trend('cross_currency_payment_duration', true);
+const crossCurrencyPaymentDuration = new Trend('cross_currency_payment_duration', true);
 const getLoanDuration = new Trend('get_loan_duration', true);
 const listUsersDuration = new Trend('list_users_duration', true);
 const flowErrors = new Counter('flow_errors');
@@ -17,28 +19,28 @@ export const options = {
   scenarios: {
     create_users_only: {
       executor: 'shared-iterations',
-      vus: 10,
+      vus: VIRTUAL_USERS,
       iterations: 2000,
       exec: 'createUserOnly',
       maxDuration: '10m',
     },
     full_loan_flow: {
       executor: 'shared-iterations',
-      vus: 10,
+      vus: VIRTUAL_USERS,
       iterations: 200,
       exec: 'fullLoanFlow',
       maxDuration: '10m',
     },
     list_users: {
       executor: 'shared-iterations',
-      vus: 10,
+      vus: VIRTUAL_USERS,
       iterations: 2000,
       exec: 'listUsers',
       maxDuration: '10m',
     },
     mixed_reads: {
       executor: 'shared-iterations',
-      vus: 10,
+      vus: VIRTUAL_USERS,
       iterations: 2000,
       exec: 'mixedReads',
       maxDuration: '10m',
@@ -93,20 +95,39 @@ function doApplyLoan(userId) {
 }
 
 function doMakePayment(loanId, crossCurrency = false) {
+  const minPaymentRes = http.get(`${BASE_URL}/api/loans/${loanId}/payments/min-payment`, JSON_HEADERS);
+  const minPaymentOk = check(minPaymentRes, { 'min-payment: 200': (r) => r.status === 200 });
+  if (!minPaymentOk) {
+      flowErrors.add(1);
+      return false;
+  }
+
+  let minPayment;
+  try {
+      minPayment = JSON.parse(minPaymentRes.body);
+  } catch {
+      flowErrors.add(1); return false;
+  }
+
+  const loanCurrency = minPayment.currency;
+  const minAmountMinor = minPayment.minPaymentAmountMinor;
+
+  const paymentCurrency = crossCurrency ? 'USD' : 'EUR';
+  const multiplier = paymentCurrency === loanCurrency ? 1 : 2; // safe overpay for FX cases
+  const amountMinor = Math.max(1, Math.floor(minAmountMinor * multiplier));
+
   const body = JSON.stringify({
-    amountMinor: randomInt(5000, 50000),
-    // Cross-currency disabled for benchmarks (external API rate limits)
-    // currency: crossCurrency ? 'USD' : 'EUR',
-    currency: 'EUR',
+    amountMinor,
+    currency: paymentCurrency,
   });
 
   const res = http.post(`${BASE_URL}/api/loans/${loanId}/payments`, body, JSON_HEADERS);
 
-  // if (crossCurrency) {
-  //   crossCurrencyPaymentDuration.add(res.timings.duration);
-  // } else {
-  makePaymentDuration.add(res.timings.duration);
-  // }
+  if (crossCurrency) {
+    crossCurrencyPaymentDuration.add(res.timings.duration);
+  } else {
+    makePaymentDuration.add(res.timings.duration);
+  }
 
   const ok = check(res, {
     'payment: 201 or 409': (r) => r.status === 201 || r.status === 409,
@@ -130,8 +151,9 @@ export function fullLoanFlow() {
   if (!loanId) return;
 
   for (let i = 0; i < PAYMENTS_PER_LOAN; i++) {
-    // const useCrossCurrency = i % 3 === 0;
-    const continued = doMakePayment(loanId);
+    const useCrossCurrency = i % 5 === 0;
+    const continued = doMakePayment(loanId, useCrossCurrency);
+
     if (!continued) break;
   }
 

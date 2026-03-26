@@ -19,7 +19,7 @@ final readonly class GetUserUseCase
     #[\NoDiscard]
     public function execute(string $id): User
     {
-        return $this->userRepository->findById(new UserId($id))
+        return $this->userRepository->findById(UserId::fromString($id))
             ?? throw UserNotFoundException::withId($id);
     }
 }

@@ -8,12 +8,24 @@ use Symfony\Component\Uid\Uuid;
 
 final readonly class UserId
 {
-    public function __construct(
+    private function __construct(
         public string $value,
     ) {
         if (!Uuid::isValid($value)) {
             throw new \InvalidArgumentException(sprintf('Invalid UUID: %s', $value));
         }
+    }
+
+    #[\NoDiscard]
+    public static function fromUuid(Uuid $uuid): self
+    {
+        return new self($uuid->toRfc4122());
+    }
+
+    #[\NoDiscard]
+    public static function fromString(string $uuid): self
+    {
+        return new self($uuid);
     }
 
     #[\NoDiscard]

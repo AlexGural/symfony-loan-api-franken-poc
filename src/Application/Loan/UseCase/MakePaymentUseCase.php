@@ -4,13 +4,16 @@ declare(strict_types=1);
 
 namespace App\Application\Loan\UseCase;
 
+use App\Domain\Loan\Entity\Loan;
 use App\Domain\Loan\Entity\Payment;
 use App\Domain\Loan\Exception\LoanNotFoundException;
+use App\Domain\Loan\Exception\MinPaymentAmountException;
 use App\Domain\Loan\Exception\UnsupportedCurrencyException;
 use App\Domain\Loan\Repository\LoanRepositoryInterface;
 use App\Domain\Loan\Repository\PaymentRepositoryInterface;
 use App\Domain\Loan\Service\ExchangeRate\ExchangeRateServiceInterface;
 use App\Domain\Loan\Service\LoanManager;
+use App\Domain\Loan\Service\LoanStrategy\PaymentStrategyResolver;
 use App\Domain\Loan\ValueObject\ConvertedPayment;
 use App\Domain\Loan\ValueObject\LoanId;
 use App\Domain\Shared\TransactionalRepositoryInterface;
@@ -28,6 +31,7 @@ final readonly class MakePaymentUseCase
         private LoanManager $loanManager,
         private ExchangeRateServiceInterface $exchangeRateService,
         private LoggerInterface $logger,
+        private PaymentStrategyResolver $paymentStrategyResolver,
     ) {
     }
 
@@ -42,8 +46,14 @@ final readonly class MakePaymentUseCase
         $paymentEntity = $this->transactional->executeTransactional(
             function () use ($loanId, $finalAmount, $conversion): Payment {
                 // Apply pessimistic write
-                $loan = $this->loanRepository->findByIdForUpdate(new LoanId($loanId))
+                $loan = $this->loanRepository->findByIdForUpdate(LoanId::fromString($loanId))
                     ?? throw LoanNotFoundException::withId($loanId);
+
+                $minLoanPayment = $this->calculateMinLoanPayment($loan);
+
+                if ($finalAmount->isLessThan($minLoanPayment)) {
+                    throw MinPaymentAmountException::withAmounts($finalAmount->getMinorAmount()->toInt(), $minLoanPayment->getMinorAmount()->toInt());
+                }
 
                 $paymentEntity = $this->loanManager->applyPayment(
                     $loan, $finalAmount, $conversion,
@@ -67,7 +77,7 @@ final readonly class MakePaymentUseCase
 
     private function convertIfForeignCurrency(string $loanId, Money $payment): ?ConvertedPayment
     {
-        $loan = $this->loanRepository->findById(new LoanId($loanId))
+        $loan = $this->loanRepository->findById(LoanId::fromString($loanId))
             ?? throw LoanNotFoundException::withId($loanId);
 
         $loanCurrency = $loan->getCurrency()->getCurrencyCode();
@@ -93,6 +103,19 @@ final readonly class MakePaymentUseCase
             convertedAmount: Money::ofMinor($convertedMinor, $loan->getCurrency()),
             originalAmount: $payment,
             exchangeRate: $rate->rate,
+        );
+    }
+
+    private function calculateMinLoanPayment(Loan $loan): Money
+    {
+        $paymentStrategy = $this->paymentStrategyResolver->resolve($loan->getTermMonths());
+
+        return $paymentStrategy->calculatePaymentAmount(
+            $loan->getPrincipal(),
+            $loan->getAnnualInterestRate(),
+            $loan->getTermMonths(),
+            $loan->getPaidMonths() + 1, // calculate next payment
+            $loan->getRemainingBalance()
         );
     }
 }

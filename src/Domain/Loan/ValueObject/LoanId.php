@@ -8,7 +8,7 @@ use Symfony\Component\Uid\Uuid;
 
 final readonly class LoanId
 {
-    public function __construct(
+    private function __construct(
         public string $value,
     ) {
         if (!Uuid::isValid($value)) {
@@ -17,9 +17,21 @@ final readonly class LoanId
     }
 
     #[\NoDiscard]
+    public static function fromUuid(Uuid $uuid): self
+    {
+        return new self($uuid->toRfc4122());
+    }
+
+    #[\NoDiscard]
+    public static function fromString(string $uuid): self
+    {
+        return new self($uuid);
+    }
+
+    #[\NoDiscard]
     public static function generate(): self
     {
-        return Uuid::v7()->toRfc4122() |> (fn (string $uuid) => new self($uuid));
+        return self::fromUuid(Uuid::v7());
     }
 
     #[\NoDiscard('LoanId comparison result must be used')]

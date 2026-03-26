@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Tests\Functional\Controller;
 
 use App\Tests\Functional\Support\ApiTestCase;
+use Symfony\Component\Uid\Uuid;
 
 final class UserControllerTest extends ApiTestCase
 {
@@ -83,7 +84,8 @@ final class UserControllerTest extends ApiTestCase
 
     public function testGetNonExistentUserReturns404(): void
     {
-        $this->jsonRequest('GET', '/api/users/00000000-0000-0000-0000-000000000000');
+        $nonExistentUserId = Uuid::v7()->toRfc4122();
+        $this->jsonRequest('GET', '/api/users/' . $nonExistentUserId);
 
         self::assertSame(404, $this->getStatusCode());
     }

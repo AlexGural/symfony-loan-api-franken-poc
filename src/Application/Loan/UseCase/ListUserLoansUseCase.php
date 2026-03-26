@@ -19,6 +19,6 @@ final readonly class ListUserLoansUseCase
     #[\NoDiscard]
     public function execute(string $userId): array
     {
-        return $this->loanRepository->findByUserId(new UserId($userId));
+        return $this->loanRepository->findByUserId(UserId::fromString($userId));
     }
 }

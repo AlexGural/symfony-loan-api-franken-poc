@@ -6,6 +6,7 @@ namespace App\Presentation\Controller;
 
 use App\Application\Loan\UseCase\ApplyLoanUseCase;
 use App\Application\Loan\UseCase\GetLoanUseCase;
+use App\Application\Loan\UseCase\GetMinLoanPayment;
 use App\Application\Loan\UseCase\ListLoanPaymentsUseCase;
 use App\Application\Loan\UseCase\ListUserLoansUseCase;
 use App\Application\Loan\UseCase\MakePaymentUseCase;
@@ -13,6 +14,7 @@ use App\Presentation\Attribute\HttpStatus;
 use App\Presentation\Request\ApplyLoanRequestDto;
 use App\Presentation\Request\MakePaymentRequestDto;
 use App\Presentation\Response\ErrorResponse;
+use App\Presentation\Response\Loan\AmountResponseDto;
 use App\Presentation\Response\Loan\LoanResponseDto;
 use App\Presentation\Response\Loan\PaymentResponseDto;
 use Nelmio\ApiDocBundle\Attribute\Model;
@@ -30,6 +32,7 @@ final readonly class LoanController
         private GetLoanUseCase $getLoan,
         private ListUserLoansUseCase $listUserLoans,
         private ListLoanPaymentsUseCase $listLoanPayments,
+        private GetMinLoanPayment $getMinLoanPayment,
     ) {
     }
 
@@ -44,8 +47,7 @@ final readonly class LoanController
         Uuid $userId,
         #[MapRequestPayload] ApplyLoanRequestDto $dto,
     ): LoanResponseDto {
-        return $this->applyLoan->execute($userId->toRfc4122(), $dto->amountMinor, $dto->currency)
-            |> LoanResponseDto::toResponse(...);
+        return $this->applyLoan->execute($userId->toRfc4122(), $dto->amountMinor, $dto->currency) |> LoanResponseDto::toResponse(...);
     }
 
     #[Route('/api/users/{userId}/loans', methods: ['GET'])]
@@ -72,8 +74,7 @@ final readonly class LoanController
     #[OA\Response(response: 404, description: 'Loan not found', content: new OA\JsonContent(ref: new Model(type: ErrorResponse::class)))]
     public function show(Uuid $id): LoanResponseDto
     {
-        return $this->getLoan->execute($id->toRfc4122())
-            |> LoanResponseDto::toResponse(...);
+        return $this->getLoan->execute($id->toRfc4122()) |> LoanResponseDto::toResponse(...);
     }
 
     #[HttpStatus(201)]
@@ -111,5 +112,18 @@ final readonly class LoanController
             PaymentResponseDto::toResponse(...),
             $this->listLoanPayments->execute($id->toRfc4122()),
         );
+    }
+
+    #[Route('/api/loans/{id}/payments/min-payment', methods: ['GET'])]
+    #[OA\Get(summary: 'Get minimum required payment amount for a loan')]
+    #[OA\Parameter(name: 'id', in: 'path', required: true, schema: new OA\Schema(type: 'string', format: 'uuid'))]
+    #[OA\Response(
+        response: 200,
+        description: 'Min payment amount',
+        content: new OA\JsonContent(ref: new Model(type: AmountResponseDto::class))
+    )]
+    public function minPayment(Uuid $id): AmountResponseDto
+    {
+        return $this->getMinLoanPayment->execute($id->toRfc4122()) |> AmountResponseDto::toResponse(...);
     }
 }

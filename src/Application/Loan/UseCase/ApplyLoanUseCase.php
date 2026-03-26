@@ -26,7 +26,7 @@ final readonly class ApplyLoanUseCase
     #[\NoDiscard]
     public function execute(string $userId, int $amountMinor, string $currency): Loan
     {
-        $user = $this->userRepository->findById(new UserId($userId))
+        $user = $this->userRepository->findById(UserId::fromString($userId))
             ?? throw UserNotFoundException::withId($userId);
 
         $principal = Money::ofMinor($amountMinor, $currency);
