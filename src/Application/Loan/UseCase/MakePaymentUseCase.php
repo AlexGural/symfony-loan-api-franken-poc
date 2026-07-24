@@ -88,10 +88,9 @@ final readonly class MakePaymentUseCase
             return null;
         }
 
-        $from = $paymentCurrency |> strtoupper(...) |> SupportedCurrency::tryFrom(...)
+        $from = SupportedCurrency::tryFrom(strtoupper($paymentCurrency))
             ?? throw UnsupportedCurrencyException::withCode($paymentCurrency);
-
-        $to = $loanCurrency |> strtoupper(...) |> SupportedCurrency::tryFrom(...)
+        $to = SupportedCurrency::tryFrom(strtoupper($loanCurrency))
             ?? throw UnsupportedCurrencyException::withCode($loanCurrency);
 
 
