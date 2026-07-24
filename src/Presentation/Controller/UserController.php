@@ -36,7 +36,7 @@ final readonly class UserController
         content: new OA\JsonContent(type: 'array', items: new OA\Items(ref: new Model(type: UserResponseDto::class))),
     )]
     /** @return UserResponseDto[] */
-    public function list(): array
+    public function listUsersAction(): array
     {
         return array_map(
             UserResponseDto::toResponse(...),
@@ -49,7 +49,7 @@ final readonly class UserController
     #[OA\Parameter(name: 'id', in: 'path', required: true, schema: new OA\Schema(type: 'string', format: 'uuid'))]
     #[OA\Response(response: 200, description: 'User details', content: new OA\JsonContent(ref: new Model(type: UserResponseDto::class)))]
     #[OA\Response(response: 404, description: 'User not found', content: new OA\JsonContent(ref: new Model(type: ErrorResponse::class)))]
-    public function show(Uuid $id): UserResponseDto
+    public function getUserAction(Uuid $id): UserResponseDto
     {
         return $this->getUser->execute($id->toRfc4122())
             |> UserResponseDto::toResponse(...);
@@ -61,7 +61,7 @@ final readonly class UserController
     #[OA\RequestBody(required: true, content: new OA\JsonContent(ref: new Model(type: CreateUserRequestDto::class)))]
     #[OA\Response(response: 201, description: 'User created', content: new OA\JsonContent(ref: new Model(type: UserResponseDto::class)))]
     #[OA\Response(response: 409, description: 'User already exists', content: new OA\JsonContent(ref: new Model(type: ErrorResponse::class)))]
-    public function create(#[MapRequestPayload] CreateUserRequestDto $dto): UserResponseDto
+    public function createUserAction(#[MapRequestPayload] CreateUserRequestDto $dto): UserResponseDto
     {
         return $this->createUser->execute($dto->name, $dto->email)
             |> UserResponseDto::toResponse(...);

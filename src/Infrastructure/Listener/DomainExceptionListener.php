@@ -16,20 +16,32 @@ use Symfony\Component\HttpKernel\KernelEvents;
 #[AsEventListener(event: KernelEvents::EXCEPTION, priority: 10)]
 final readonly class DomainExceptionListener
 {
-    private const array HTTP_STATUS_MAP = [
-        DomainErrorCode::USER_NOT_FOUND->value => Response::HTTP_NOT_FOUND,
-        DomainErrorCode::USER_ALREADY_EXISTS->value => Response::HTTP_CONFLICT,
-        DomainErrorCode::LOAN_NOT_FOUND->value => Response::HTTP_NOT_FOUND,
-        DomainErrorCode::LOAN_ALREADY_PAID_OFF->value => Response::HTTP_CONFLICT,
-        DomainErrorCode::PAYMENT_CURRENCY_MISMATCH->value => Response::HTTP_UNPROCESSABLE_ENTITY,
-        DomainErrorCode::EXCHANGE_RATE_UNAVAILABLE->value => Response::HTTP_SERVICE_UNAVAILABLE,
-        DomainErrorCode::UNSUPPORTED_CURRENCY->value => Response::HTTP_UNPROCESSABLE_ENTITY,
-        DomainErrorCode::MIN_PAYMENT_AMOUNT->value => Response::HTTP_UNPROCESSABLE_ENTITY,
-    ];
-
     public function __construct(
         private LoggerInterface $logger,
     ) {
+    }
+
+    private function resolveHttpStatus(DomainErrorCode $errorCode): int
+    {
+        return match ($errorCode) {
+            // HTTP_NOT_FOUND
+            DomainErrorCode::USER_NOT_FOUND,
+            DomainErrorCode::LOAN_NOT_FOUND => Response::HTTP_NOT_FOUND,
+
+            // HTTP_CONFLICT
+            DomainErrorCode::LOAN_ALREADY_PAID_OFF,
+            DomainErrorCode::USER_ALREADY_EXISTS => Response::HTTP_CONFLICT,
+
+            // HTTP_UNPROCESSABLE_ENTITY
+            DomainErrorCode::PAYMENT_CURRENCY_MISMATCH,
+            DomainErrorCode::UNSUPPORTED_CURRENCY,
+            DomainErrorCode::MIN_PAYMENT_AMOUNT => Response::HTTP_UNPROCESSABLE_ENTITY,
+
+            // HTTP_SERVICE_UNAVAILABLE
+            DomainErrorCode::EXCHANGE_RATE_UNAVAILABLE => Response::HTTP_SERVICE_UNAVAILABLE,
+
+            default => Response::HTTP_INTERNAL_SERVER_ERROR,
+        };
     }
 
     public function __invoke(ExceptionEvent $event): void
@@ -41,7 +53,7 @@ final readonly class DomainExceptionListener
         }
 
         $errorCode = $exception->errorCode();
-        $httpStatus = self::HTTP_STATUS_MAP[$errorCode->value] ?? Response::HTTP_INTERNAL_SERVER_ERROR;
+        $httpStatus = $this->resolveHttpStatus($errorCode);
 
         $request = $event->getRequest();
         $this->logger->warning('domain_error', [

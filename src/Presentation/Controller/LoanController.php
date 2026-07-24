@@ -43,7 +43,7 @@ final readonly class LoanController
     #[OA\RequestBody(required: true, content: new OA\JsonContent(ref: new Model(type: ApplyLoanRequestDto::class)))]
     #[OA\Response(response: 201, description: 'Loan created', content: new OA\JsonContent(ref: new Model(type: LoanResponseDto::class)))]
     #[OA\Response(response: 404, description: 'User not found', content: new OA\JsonContent(ref: new Model(type: ErrorResponse::class)))]
-    public function apply(
+    public function applyAction(
         Uuid $userId,
         #[MapRequestPayload] ApplyLoanRequestDto $dto,
     ): LoanResponseDto {
@@ -59,7 +59,7 @@ final readonly class LoanController
         content: new OA\JsonContent(type: 'array', items: new OA\Items(ref: new Model(type: LoanResponseDto::class))),
     )]
     /** @return LoanResponseDto[] */
-    public function listByUser(Uuid $userId): array
+    public function listByUserAction(Uuid $userId): array
     {
         return array_map(
             LoanResponseDto::toResponse(...),
@@ -72,7 +72,7 @@ final readonly class LoanController
     #[OA\Parameter(name: 'id', in: 'path', required: true, schema: new OA\Schema(type: 'string', format: 'uuid'))]
     #[OA\Response(response: 200, description: 'Loan details', content: new OA\JsonContent(ref: new Model(type: LoanResponseDto::class)))]
     #[OA\Response(response: 404, description: 'Loan not found', content: new OA\JsonContent(ref: new Model(type: ErrorResponse::class)))]
-    public function show(Uuid $id): LoanResponseDto
+    public function showAction(Uuid $id): LoanResponseDto
     {
         return $this->getLoan->execute($id->toRfc4122()) |> LoanResponseDto::toResponse(...);
     }
@@ -86,7 +86,7 @@ final readonly class LoanController
     #[OA\Response(response: 404, description: 'Loan not found', content: new OA\JsonContent(ref: new Model(type: ErrorResponse::class)))]
     #[OA\Response(response: 409, description: 'Loan already paid off', content: new OA\JsonContent(ref: new Model(type: ErrorResponse::class)))]
     #[OA\Response(response: 503, description: 'Exchange rate unavailable', content: new OA\JsonContent(ref: new Model(type: ErrorResponse::class)))]
-    public function pay(
+    public function payAction(
         Uuid $id,
         #[MapRequestPayload] MakePaymentRequestDto $dto,
     ): PaymentResponseDto {
@@ -106,7 +106,7 @@ final readonly class LoanController
         content: new OA\JsonContent(type: 'array', items: new OA\Items(ref: new Model(type: PaymentResponseDto::class))),
     )]
     /** @return PaymentResponseDto[] */
-    public function payments(Uuid $id): array
+    public function paymentsListAction(Uuid $id): array
     {
         return array_map(
             PaymentResponseDto::toResponse(...),
@@ -122,7 +122,7 @@ final readonly class LoanController
         description: 'Min payment amount',
         content: new OA\JsonContent(ref: new Model(type: AmountResponseDto::class))
     )]
-    public function minPayment(Uuid $id): AmountResponseDto
+    public function getMinPaymentAction(Uuid $id): AmountResponseDto
     {
         return $this->getMinLoanPayment->execute($id->toRfc4122()) |> AmountResponseDto::toResponse(...);
     }

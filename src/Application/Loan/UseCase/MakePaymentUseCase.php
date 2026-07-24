@@ -43,6 +43,7 @@ final readonly class MakePaymentUseCase
 
         $finalAmount = $conversion?->convertedAmount ?? $payment;
 
+        /** @var Payment $paymentEntity */
         $paymentEntity = $this->transactional->executeTransactional(
             function () use ($loanId, $finalAmount, $conversion): Payment {
                 // Apply pessimistic write
@@ -87,10 +88,12 @@ final readonly class MakePaymentUseCase
             return null;
         }
 
-        $from = SupportedCurrency::tryFrom(strtoupper($paymentCurrency))
+        $from = $paymentCurrency |> strtoupper(...) |> SupportedCurrency::tryFrom(...)
             ?? throw UnsupportedCurrencyException::withCode($paymentCurrency);
-        $to = SupportedCurrency::tryFrom(strtoupper($loanCurrency))
+
+        $to = $loanCurrency |> strtoupper(...) |> SupportedCurrency::tryFrom(...)
             ?? throw UnsupportedCurrencyException::withCode($loanCurrency);
+
 
         $rate = $this->exchangeRateService->getBestRate($from, $to);
 
